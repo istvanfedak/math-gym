@@ -64,7 +64,7 @@ class Board extends StatelessWidget {
     Key? key, 
     this.squares, 
     this.onPressed,
-    this.onEnter, 
+    this.onDelete, 
     this.onReset,
     this.curValue,
     this.curMathProblem
@@ -73,7 +73,7 @@ class Board extends StatelessWidget {
   final curValue;
   final squares;
   final onPressed;
-  final onEnter;
+  final onDelete;
   final onReset;
   final curMathProblem;
 
@@ -83,9 +83,9 @@ class Board extends StatelessWidget {
     onPressed: ()=>this.onPressed(i),
   );
 
-  Widget renderEnterButton() => Square(
-      icon: Icon(Icons.arrow_forward_ios),
-      onPressed: ()=>this.onEnter(),
+  Widget renderDeleteButton() => Square(
+      icon: Icon(Icons.arrow_back_ios_new_rounded),
+      onPressed: ()=>this.onDelete(),
   );
 
   Widget renderResetButton() => Square(
@@ -154,7 +154,7 @@ class Board extends StatelessWidget {
         if(i==3 && j==0)
           row.add(this.renderResetButton());
         else if(i==3 && j==2)
-          row.add(this.renderEnterButton());
+          row.add(this.renderDeleteButton());
         else 
           row.add(this.renderSquare((i*3)+j));
         
@@ -209,9 +209,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (this.curValue.length + 1 >= this.maxSize) return;
     setState(() {
       this.curValue += squares[i];
-    });
-    if (this.validate())
       this.handleEnter();
+    });
   }
 
   handleEnter() {
@@ -224,6 +223,13 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         this.problemNumber += 1;
       }
+    });
+  }
+
+  handleDelete() {
+    if (this.curValue.length <= 0) return;
+    setState(() {
+      this.curValue = this.curValue.substring(0, this.curValue.length - 1);;
     });
   }
 
@@ -274,7 +280,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(child: Board(
         squares: this.squares,
         onPressed: (i)=>this.handleClick(i),
-        onEnter: ()=>this.handleEnter(),
+        onDelete: ()=>this.handleDelete(),
         onReset: ()=>this.handleReset(),
         curValue: this.curValue,
         curMathProblem: this.curMathProblem
