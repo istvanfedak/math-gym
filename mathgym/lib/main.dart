@@ -59,6 +59,90 @@ class Square extends StatelessWidget {
   }
 }
 
+class SettingsItem extends StatelessWidget {
+  SettingsItem({
+    Key? key,
+    this.text,
+    this.value,
+    this.onPressed,
+    this.icon
+  }): super(key: key);
+
+  final text;
+  final value;
+  final onPressed;
+  final icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 251,
+      padding: const EdgeInsets.only(
+        top: 20.0, 
+        bottom: 20.0, 
+        left: 20.0, 
+        right: 20.0
+      ),
+      child: Row(
+        children: [
+          Text(
+            this.text,
+            style:TextStyle(
+              color: Colors.black,
+              fontSize: 23.0,
+              fontWeight: FontWeight.bold
+            ),
+          ),
+          Expanded(
+            child: Container(),
+          ),
+          Square(
+            value: this.value,
+            icon: this.icon,
+            onPressed: ()=>onPressed(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Settings extends StatelessWidget {
+  Settings({
+    Key? key,
+    this.difficultyValue,
+    this.difficultyHandler,
+    this.arithmeticValue,
+    this.arithmeticHandler,
+  }): super(key: key);
+
+  final difficultyValue;
+  final difficultyHandler;
+  final arithmeticValue; // '+', '-', 'x', '÷';
+  final arithmeticHandler;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SettingsItem(
+            text: 'Difficulty',
+            value: this.difficultyValue,
+            onPressed: ()=>this.difficultyHandler(),
+          ),
+          SettingsItem(
+            text: 'Arithmetic',
+            value: this.arithmeticValue,
+            onPressed: ()=>this.arithmeticHandler(),
+          ),
+        ],
+      )
+    );
+  }
+}
+
 class Board extends StatelessWidget {
   Board({
     Key? key, 
@@ -167,9 +251,11 @@ class Board extends StatelessWidget {
       rows.add(Padding(padding: const EdgeInsets.all(8.0),));
     }
 
-    return Column (
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: rows
+    return Center( 
+      child: Column (
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: rows,
+      )
     );
   }
 }
@@ -180,28 +266,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var squares;
-  var maxSize;
-  var curValue;
+  final squares = ['7','8','9','4','5','6','1','2','3','reset','0','enter'];
+  final maxSize = 14;
+  var curValue = '';
   var mathProblems;
   var curMathProblem;
-  var problemNumber;
-  var dificulty;
+  var problemNumber = 0;
+  var dificulty = 6;
+  var settingsMenuIsOpen = false;
+  final arithmeticOperators = ['+', '-', 'x', '÷'];
+  var curOperator = 2;
   final random = Random();
 
   @override
   initState() {
     super.initState();
-    this.squares = ['7','8','9','4','5','6','1','2','3','reset','0','enter'];
-    this.maxSize = 14;
-    this.curValue = "";
-    this.dificulty = 6;
     this.mathProblems = createShuffledMathProblems(this.dificulty);
-    this.problemNumber = 0;
   }
 
   bool validate(){
-    return (int.parse(this.curValue) == this.mathProblems[this.problemNumber][2]);
+    return (int.parse(this.curValue) == this.mathProblems[this.problemNumber][1]);
   }
 
   handleClick(int i) {
@@ -251,20 +335,56 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  List<List<int>> createShuffledMathProblems(largestMult) {
-    // create math problems
-    List<List<int>> problems = [];
-    for(int i = 2; i < largestMult+1; i ++) {
-      for(int j = 2; j < 10; j ++) {
-        List<int> problem = [i, j, i * j];
-        problems.add(problem);
+  handleArithmeticOperatorChange () {
+    setState(() {
+      if (this.curOperator + 1 == this.arithmeticOperators.length) {
+        this.curOperator = 0;
+      } else {
+        this.curOperator += 1;
       }
+      this.mathProblems = this.createShuffledMathProblems(this.dificulty);
+      this.problemNumber = 0;
+    });
+  }
+
+  handleSettingsMenu() {
+    setState(() {
+      this.settingsMenuIsOpen = ! this.settingsMenuIsOpen;
+    });
+  }
+
+  List createProblem(int i, int j) {
+    if (this.arithmeticOperators[this.curOperator] == '+') {
+      return ['$i + $j', i+j];
     }
+    else if (this.arithmeticOperators[this.curOperator] == '-') {
+      if (i > j)
+        return ['$i - $j', i - j];
+      else
+        return ['$j - $i', j - i];
+    }
+    else if (this.arithmeticOperators[this.curOperator] == 'x') {
+      return ['$i x $j', i * j];
+    } 
+    else if (this.arithmeticOperators[this.curOperator] == '÷') {
+      return ['${i*j} ÷ $i', j];
+    }
+    else {
+      return ['Error', 0];
+    }
+  }
+
+  List<List> createShuffledMathProblems(largestMult) {
+    // create math problems
+    List<List> problems = [];
+    for(int i = 2; i < largestMult+1; i ++)
+      for(int j = 2; j < 10; j ++)
+        problems.add(createProblem(i, j));
 
     // shuffle
     for(int i = problems.length-1; i > 0; i--){
       var j = random.nextInt(i+1);
-      List<int> temp = problems[i];
+      List temp = problems[i];
       problems[i] = problems[j];
       problems[j] = temp;
     }
@@ -274,21 +394,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    this.curMathProblem = '${mathProblems[problemNumber][0]} x ${mathProblems[problemNumber][1]}';
+    this.curMathProblem = mathProblems[problemNumber][0];
+    var settingsPage = Settings(
+      difficultyValue: dificulty.toString(),
+      difficultyHandler: ()=>this.handleDificultyIncrease(),
+      arithmeticValue: this.arithmeticOperators[this.curOperator],
+      arithmeticHandler: ()=>handleArithmeticOperatorChange(),
+    );
+    var boardPage = Board(
+      squares: this.squares,
+      onPressed: (i)=>this.handleClick(i),
+      onDelete: ()=>this.handleDelete(),
+      onReset: ()=>this.handleReset(),
+      curValue: this.curValue,
+      curMathProblem: this.curMathProblem
+    );
+
     return Scaffold(
       appBar: AppBar(title: Text("MathGym"),),
-      body: Center(child: Board(
-        squares: this.squares,
-        onPressed: (i)=>this.handleClick(i),
-        onDelete: ()=>this.handleDelete(),
-        onReset: ()=>this.handleReset(),
-        curValue: this.curValue,
-        curMathProblem: this.curMathProblem
-      )),
+      body: (this.settingsMenuIsOpen)? settingsPage: boardPage,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {this.handleDificultyIncrease();},
-        tooltip: 'Increment',
-        child: Text(dificulty.toString()),
+        onPressed: ()=>this.handleSettingsMenu(),
+        tooltip: 'Settings',
+        child: (this.settingsMenuIsOpen)? Icon(Icons.clear): Icon(Icons.settings),
       ),
     );
   }
